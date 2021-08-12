@@ -1,0 +1,15 @@
+[package]
+name = "serum-rs"
+version = "0.1.0"
+authors = [
+    "Alexander Mescheryakov <freecoder.xx@gmail.com>",
+]
+edition = "2018"
+
+[dependencies]
+solana-sdk = "1.7"
+spl-token = "3.2"
+serum_dex = "0.4"
+serum-swap = { version = "0.4", features = ["no-entrypoint"] }
+borsh = "0.9"
+
