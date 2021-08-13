@@ -7,9 +7,11 @@ authors = [
 edition = "2018"
 
 [dependencies]
+borsh = "0.9"
 solana-sdk = "1.7"
+solana-client = "1.7"
 spl-token = "3.2"
 serum_dex = "0.4"
 serum-swap = { version = "0.4", features = ["no-entrypoint"] }
-borsh = "0.9"
-
+thiserror = "1.0"
+safe-transmute = "0.11"
