@@ -51,15 +51,15 @@ impl<'a, T, G> From<safe_transmute::Error<'a, T, G>> for Error {
 #[derive(Debug)]
 pub struct MarketPubkeys {
     pub market: Pubkey,
-    pub req_q: Pubkey,
-    pub event_q: Pubkey,
+    pub request_queue: Pubkey,
+    pub event_queue: Pubkey,
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub coin_mint: Pubkey,
     pub coin_vault: Pubkey,
     pub pc_mint: Pubkey,
     pub pc_vault: Pubkey,
-    pub vault_signer_key: Pubkey,
+    pub vault_signer: Pubkey,
 }
 
 #[cfg(target_endian = "little")]
@@ -83,15 +83,15 @@ pub fn get_market_keys(client: &RpcClient, dex_program_id: Pubkey, market: Pubke
 
     Ok(MarketPubkeys {
         market,
-        req_q: Pubkey::new(transmute_one_to_bytes(&identity(market_state.req_q))),
-        event_q: Pubkey::new(transmute_one_to_bytes(&identity(market_state.event_q))),
+        request_queue: Pubkey::new(transmute_one_to_bytes(&identity(market_state.req_q))),
+        event_queue: Pubkey::new(transmute_one_to_bytes(&identity(market_state.event_q))),
         bids: Pubkey::new(transmute_one_to_bytes(&identity(market_state.bids))),
         asks: Pubkey::new(transmute_one_to_bytes(&identity(market_state.asks))),
         coin_mint: Pubkey::new(transmute_one_to_bytes(&identity(market_state.coin_mint))),
         coin_vault: Pubkey::new(transmute_one_to_bytes(&identity(market_state.coin_vault))),
         pc_mint: Pubkey::new(transmute_one_to_bytes(&identity(market_state.pc_mint))),
         pc_vault: Pubkey::new(transmute_one_to_bytes(&identity(market_state.pc_vault))),
-        vault_signer_key,
+        vault_signer: vault_signer_key,
     })
 }
 
