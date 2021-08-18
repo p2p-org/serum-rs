@@ -181,3 +181,15 @@ pub fn close_account(
         data: instruction::CloseAccount.try_to_vec()?,
     })
 }
+
+mod tests {
+    pub use super::*;
+
+    #[test]
+    fn serialize_instruction() {
+        let pubkey = Pubkey::new_unique();
+        let init = init_account(pubkey, pubkey, pubkey, pubkey, pubkey).unwrap();
+
+        assert_eq!(init.data, Vec::<u8>::new());
+    }
+}

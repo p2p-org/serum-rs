@@ -1,8 +1,13 @@
-use std::{borrow::Cow, convert::identity};
+use std::{
+    borrow::Cow,
+    convert::identity,
+    ops::{Deref, DerefMut},
+};
 
 use safe_transmute::{transmute_many_pedantic, transmute_one_pedantic, transmute_one_to_bytes, transmute_to_bytes};
 use serum_dex::state::{
-    gen_vault_signer_key, AccountFlag, Market, MarketState, MarketStateV2, ACCOUNT_HEAD_PADDING, ACCOUNT_TAIL_PADDING,
+    gen_vault_signer_key, AccountFlag, Market as DexMarket, MarketState, MarketStateV2, ACCOUNT_HEAD_PADDING,
+    ACCOUNT_TAIL_PADDING,
 };
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
@@ -48,6 +53,66 @@ impl<'a, T, G> From<safe_transmute::Error<'a, T, G>> for Error {
     }
 }
 
+pub enum Market {
+    V1(MarketState),
+    V2(MarketStateV2),
+}
+
+impl Market {
+    #[cfg(target_endian = "little")]
+    pub fn deserialize(account_data: &[u8]) -> Result<Self, Error> {
+        let words = remove_dex_account_padding(account_data)?;
+        let account_flags = DexMarket::account_flags(account_data)?;
+        if account_flags.intersects(AccountFlag::Permissioned) {
+            let state =
+                transmute_one_pedantic::<MarketStateV2>(transmute_to_bytes(&words)).map_err(|err| err.without_src())?;
+            Ok(Market::V2(state))
+        } else {
+            let state =
+                transmute_one_pedantic::<MarketState>(transmute_to_bytes(&words)).map_err(|err| err.without_src())?;
+            Ok(Market::V1(state))
+        }
+    }
+
+    pub fn pubkeys(&self, dex_program_id: Pubkey) -> Result<MarketPubkeys, Error> {
+        let market = Pubkey::new(transmute_to_bytes(&identity(self.own_address)));
+        let vault_signer = gen_vault_signer_key(self.vault_signer_nonce, &market, &dex_program_id)?;
+
+        Ok(MarketPubkeys {
+            market,
+            request_queue: Pubkey::new(transmute_one_to_bytes(&identity(self.req_q))),
+            event_queue: Pubkey::new(transmute_one_to_bytes(&identity(self.event_q))),
+            bids: Pubkey::new(transmute_one_to_bytes(&identity(self.bids))),
+            asks: Pubkey::new(transmute_one_to_bytes(&identity(self.asks))),
+            coin_mint: Pubkey::new(transmute_one_to_bytes(&identity(self.coin_mint))),
+            coin_vault: Pubkey::new(transmute_one_to_bytes(&identity(self.coin_vault))),
+            pc_mint: Pubkey::new(transmute_one_to_bytes(&identity(self.pc_mint))),
+            pc_vault: Pubkey::new(transmute_one_to_bytes(&identity(self.pc_vault))),
+            vault_signer,
+        })
+    }
+}
+
+impl Deref for Market {
+    type Target = MarketState;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Market::V1(v1) => v1,
+            Market::V2(v2) => v2.deref(),
+        }
+    }
+}
+
+impl DerefMut for Market {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            Market::V1(v1) => v1,
+            Market::V2(v2) => v2.deref_mut(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct MarketPubkeys {
     pub market: Pubkey,
@@ -65,34 +130,11 @@ pub struct MarketPubkeys {
 #[cfg(target_endian = "little")]
 pub fn get_market_keys(client: &RpcClient, dex_program_id: Pubkey, market: Pubkey) -> Result<MarketPubkeys, Error> {
     let account_data = client.get_account_data(&market)?;
-    let words = remove_dex_account_padding(&account_data)?;
-    let market_state = {
-        let account_flags = Market::account_flags(&account_data)?;
-        if account_flags.intersects(AccountFlag::Permissioned) {
-            let state =
-                transmute_one_pedantic::<MarketStateV2>(transmute_to_bytes(&words)).map_err(|err| err.without_src())?;
-            state.inner
-        } else {
-            transmute_one_pedantic::<MarketState>(transmute_to_bytes(&words)).map_err(|err| err.without_src())?
-        }
-    };
+    let market_state = Market::deserialize(&account_data)?;
+
     market_state.check_flags()?;
-
-    let vault_signer_key = gen_vault_signer_key(market_state.vault_signer_nonce, &market, &dex_program_id)?;
     assert_eq!(transmute_to_bytes(&identity(market_state.own_address)), market.as_ref());
-
-    Ok(MarketPubkeys {
-        market,
-        request_queue: Pubkey::new(transmute_one_to_bytes(&identity(market_state.req_q))),
-        event_queue: Pubkey::new(transmute_one_to_bytes(&identity(market_state.event_q))),
-        bids: Pubkey::new(transmute_one_to_bytes(&identity(market_state.bids))),
-        asks: Pubkey::new(transmute_one_to_bytes(&identity(market_state.asks))),
-        coin_mint: Pubkey::new(transmute_one_to_bytes(&identity(market_state.coin_mint))),
-        coin_vault: Pubkey::new(transmute_one_to_bytes(&identity(market_state.coin_vault))),
-        pc_mint: Pubkey::new(transmute_one_to_bytes(&identity(market_state.pc_mint))),
-        pc_vault: Pubkey::new(transmute_one_to_bytes(&identity(market_state.pc_vault))),
-        vault_signer: vault_signer_key,
-    })
+    market_state.pubkeys(dex_program_id)
 }
 
 fn remove_dex_account_padding(data: &[u8]) -> Result<Cow<[u64]>, Error> {
