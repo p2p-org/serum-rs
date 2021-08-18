@@ -53,6 +53,8 @@ impl<'a, T, G> From<safe_transmute::Error<'a, T, G>> for Error {
     }
 }
 
+#[derive(Copy, Clone)]
+#[cfg_attr(target_endian = "little", derive(Debug))]
 pub enum Market {
     V1(MarketState),
     V2(MarketStateV2),
