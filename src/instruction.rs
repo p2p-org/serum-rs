@@ -114,6 +114,8 @@ pub fn swap_transitive(
     amount: u64,
     rate: u64,
     from_decimals: u8,
+    quote_decimals: u8,
+    strict: bool,
 ) -> Result<Instruction, ProgramError> {
     let accounts = vec![
         AccountMeta::new(from.market, false),
@@ -152,8 +154,8 @@ pub fn swap_transitive(
             min_exchange_rate: ExchangeRate {
                 rate,
                 from_decimals,
-                quote_decimals: 0,
-                strict: false,
+                quote_decimals,
+                strict,
             },
         }
         .try_to_vec()?,
