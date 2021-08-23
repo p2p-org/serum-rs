@@ -9,15 +9,11 @@ use serum_dex::state::{
     gen_vault_signer_key, AccountFlag, Market as DexMarket, MarketState, MarketStateV2, ACCOUNT_HEAD_PADDING,
     ACCOUNT_TAIL_PADDING,
 };
-use solana_client::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Solana client error: {0}")]
-    ClientError(#[from] solana_client::client_error::ClientError),
-
     #[error("Dex error: {0}")]
     DexError(#[from] serum_dex::error::DexError),
 
@@ -130,9 +126,12 @@ pub struct MarketPubkeys {
 }
 
 #[cfg(target_endian = "little")]
-pub fn get_market_keys(client: &RpcClient, dex_program_id: Pubkey, market: Pubkey) -> Result<MarketPubkeys, Error> {
-    let account_data = client.get_account_data(&market)?;
-    let market_state = Market::deserialize(&account_data)?;
+pub fn get_market_keys(
+    market_account_data: &[u8],
+    dex_program_id: Pubkey,
+    market: Pubkey,
+) -> Result<MarketPubkeys, Error> {
+    let market_state = Market::deserialize(market_account_data)?;
 
     market_state.check_flags()?;
     assert_eq!(transmute_to_bytes(&identity(market_state.own_address)), market.as_ref());
