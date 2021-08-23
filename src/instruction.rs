@@ -1,6 +1,6 @@
 use borsh::ser::BorshSerialize;
 use serum_swap::{instruction, ExchangeRate, Side};
-use solana_sdk::{
+use solana_program::{
     instruction::{AccountMeta, Instruction},
     program_error::ProgramError,
     pubkey::Pubkey,

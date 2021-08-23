@@ -9,7 +9,7 @@ use serum_dex::state::{
     gen_vault_signer_key, AccountFlag, Market as DexMarket, MarketState, MarketStateV2, ACCOUNT_HEAD_PADDING,
     ACCOUNT_TAIL_PADDING,
 };
-use solana_sdk::pubkey::Pubkey;
+use solana_program::pubkey::Pubkey;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -18,7 +18,7 @@ pub enum Error {
     DexError(#[from] serum_dex::error::DexError),
 
     #[error("Program error: {0}")]
-    ProgramError(#[from] solana_sdk::program_error::ProgramError),
+    ProgramError(#[from] solana_program::program_error::ProgramError),
 
     #[error("Dex account length {0} is too small to contain valid padding")]
     AccountLengthTooSmall(usize),
