@@ -1,13 +1,13 @@
 [package]
 name = "serum-rs"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
     "Alexander Mescheryakov <freecoder.xx@gmail.com>",
 ]
 edition = "2018"
 
 [dependencies]
-borsh = "0.9"
+anchor-lang = "0.13"
 solana-program = "1.7"
 spl-token = "3.2"
 serum_dex = "0.4"

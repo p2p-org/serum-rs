@@ -1,8 +1,7 @@
-use borsh::ser::BorshSerialize;
+use anchor_lang::InstructionData;
 use serum_swap::{instruction, ExchangeRate, Side};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
-    program_error::ProgramError,
     pubkey::Pubkey,
     sysvar,
 };
@@ -43,7 +42,7 @@ pub fn init_account(
     authority: Pubkey,
     market: Pubkey,
     open_orders: Pubkey,
-) -> Result<Instruction, ProgramError> {
+) -> Instruction {
     let accounts = vec![
         AccountMeta::new(open_orders, false),
         AccountMeta::new_readonly(authority, true),
@@ -51,11 +50,11 @@ pub fn init_account(
         AccountMeta::new_readonly(dex_program_id, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
-    Ok(Instruction {
+    Instruction {
         program_id: swap_program_id,
         accounts,
-        data: instruction::InitAccount.try_to_vec()?,
-    })
+        data: instruction::InitAccount.data(),
+    }
 }
 
 pub fn swap(
@@ -68,7 +67,7 @@ pub fn swap(
     side: Side,
     rate: u64,
     from_decimals: u8,
-) -> Result<Instruction, ProgramError> {
+) -> Instruction {
     let accounts = vec![
         AccountMeta::new(market.market, false),
         AccountMeta::new(market.open_orders, false),
@@ -87,7 +86,7 @@ pub fn swap(
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
-    Ok(Instruction {
+    Instruction {
         program_id: swap_program_id,
         accounts,
         data: instruction::Swap {
@@ -100,8 +99,8 @@ pub fn swap(
                 strict: false,
             },
         }
-        .try_to_vec()?,
-    })
+        .data(),
+    }
 }
 
 pub fn swap_transitive(
@@ -116,7 +115,7 @@ pub fn swap_transitive(
     from_decimals: u8,
     quote_decimals: u8,
     strict: bool,
-) -> Result<Instruction, ProgramError> {
+) -> Instruction {
     let accounts = vec![
         AccountMeta::new(from.market, false),
         AccountMeta::new(from.open_orders, false),
@@ -146,7 +145,7 @@ pub fn swap_transitive(
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
-    Ok(Instruction {
+    Instruction {
         program_id: swap_program_id,
         accounts,
         data: instruction::SwapTransitive {
@@ -158,8 +157,8 @@ pub fn swap_transitive(
                 strict,
             },
         }
-        .try_to_vec()?,
-    })
+        .data(),
+    }
 }
 
 pub fn close_account(
@@ -169,7 +168,7 @@ pub fn close_account(
     market: Pubkey,
     open_orders: Pubkey,
     destination: Pubkey,
-) -> Result<Instruction, ProgramError> {
+) -> Instruction {
     let accounts = vec![
         AccountMeta::new(open_orders, false),
         AccountMeta::new_readonly(authority, true),
@@ -177,11 +176,11 @@ pub fn close_account(
         AccountMeta::new_readonly(market, false),
         AccountMeta::new_readonly(dex_program_id, false),
     ];
-    Ok(Instruction {
+    Instruction {
         program_id: swap_program_id,
         accounts,
-        data: instruction::CloseAccount.try_to_vec()?,
-    })
+        data: instruction::CloseAccount.data(),
+    }
 }
 
 mod tests {
@@ -190,8 +189,34 @@ mod tests {
     #[test]
     fn serialize_instruction() {
         let pubkey = Pubkey::new_unique();
-        let init = init_account(pubkey, pubkey, pubkey, pubkey, pubkey).unwrap();
+        let init = init_account(pubkey, pubkey, pubkey, pubkey, pubkey);
+        let swap = swap(
+            pubkey,
+            pubkey,
+            pubkey,
+            pubkey,
+            MarketAccounts {
+                market: pubkey,
+                open_orders: pubkey,
+                request_queue: pubkey,
+                event_queue: pubkey,
+                bids: pubkey,
+                asks: pubkey,
+                order_payer_token_account: pubkey,
+                coin_vault: pubkey,
+                pc_vault: pubkey,
+                vault_signer: pubkey,
+                coin_wallet: pubkey,
+            },
+            1,
+            Side::Ask,
+            2,
+            3,
+        );
 
-        assert_eq!(init.data, Vec::<u8>::new());
+        assert_eq!(init.data, vec![169, 188, 158, 199, 9, 151, 101, 125]);
+        assert_eq!(swap.data, vec![
+            248, 198, 158, 145, 225, 117, 135, 200, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0
+        ]);
     }
 }
