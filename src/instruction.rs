@@ -84,7 +84,7 @@ pub fn swap(
         AccountMeta::new(*pc_wallet, false),
         AccountMeta::new_readonly(*dex_program_id, false),
         AccountMeta::new_readonly(spl_token::id(), false),
-        AccountMeta::new_readonly(spl_token::id(), false),
+        AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
     Instruction {
         program_id: *swap_program_id,
@@ -143,7 +143,7 @@ pub fn swap_transitive(
         AccountMeta::new(*pc_wallet, false),
         AccountMeta::new_readonly(*dex_program_id, false),
         AccountMeta::new_readonly(spl_token::id(), false),
-        AccountMeta::new_readonly(spl_token::id(), false),
+        AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
     Instruction {
         program_id: *swap_program_id,
