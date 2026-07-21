@@ -10,7 +10,7 @@ edition = "2018"
 anchor-lang = "0.13"
 solana-program = "1.7"
 spl-token = "3.2"
-serum_dex = "0.4"
+serum_dex = "0.5"
 serum-swap = { version = "0.4", features = ["no-entrypoint"] }
 thiserror = "1.0"
 safe-transmute = "0.11"
