@@ -7,7 +7,7 @@ authors = [
 edition = "2018"
 
 [dependencies]
-anchor-lang = "0.13"
+anchor-lang = "0.32"
 solana-program = "1.7"
 spl-token = "3.2"
 serum_dex = "0.4"
